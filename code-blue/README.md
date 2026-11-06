@@ -14,7 +14,9 @@ A 2D arcade fighting game for healthcare workers. It mixes Street Fighter-style 
 | **CESAR** "The Vein Hunter" | Phlebotomist | Butterfly Strike · Tourniquet Tornado (pull) · Vein Finder Vision (damage + crit buff) · Specimen Storm | **The Difficult Stick** → *SPECIMEN COLLECTED!* |
 | **CHAD LEDGER** "The Budget Boss" | Hospital Administrator | Budget Cut · Mandatory Meeting (trap) · Staffing Shortage (decoys) · Performance Review | **Corporate Restructuring** → *POSITION ELIMINATED!* |
 
-Martel, Ruben and Cesar are cartoon likenesses drawn from the reference photos: skin tone, head shape, hair (bald / slicked pompadour / textured crop with blunt fringe and high fade) and beards. Nova and Chad Ledger are fictional.
+Martel and Ruben's heads are cut straight from the ImmunoCare illustrations. Cesar's head comes from his photo, smoothed and outlined to match that illustrated style. Their bodies are animated in code, with outfits and skin tones matched to the artwork. Nova and Chad Ledger are fictional and fully drawn in code.
+
+To regenerate the heads from new artwork, run `python3 tools/make_heads.py <martel_img> <ruben_img> <cesar_img>` (adjust the crop boxes in `SPEC`), then `python3 build.py`. This needs `pip install opencv-python-headless numpy`.
 
 ## Controls
 
@@ -52,7 +54,7 @@ Touch screens get an on-screen D-pad and buttons automatically. You can force th
 
 ## Limitations (Artifact / single-file build)
 
-- **No photo sprites.** The game has no image files. Characters are drawn in code to match the reference photos, which keeps the file self-contained and every animation frame consistent. Portraits come from the same drawings.
+- **Illustrated heads, animated bodies.** The three real-person heads are single illustrations embedded in the HTML, so their faces don't change expression. Hits, KOs and shouts are shown with squash, shake, sweat drops and dizzy stars instead. Full illustrated sprite sheets would need dedicated art (see below).
 - **Optional real portraits.** Add `?portraits=1` to the URL and put PNGs at `assets/portraits/<id>.png` (`martel`, `nova`, `ruben`, `cesar`, `admin`, roughly 3:4 head-and-shoulders). They replace the drawn cards on the select screen.
 - **Synthesized sound.** Music and sound effects are generated with Web Audio; there are no recorded audio files. The announcer voice uses the browser's speech engine, so it sounds different per device. Turn it off in Settings and the callouts stay on screen.
 - **No external framework.** Phaser/React aren't used, so the game works anywhere an Artifact runs. It's plain HTML5 Canvas with a fixed 60 FPS update loop.
@@ -69,7 +71,9 @@ Touch screens get an on-screen D-pad and buttons automatically. You can force th
 ```
 code-blue/
 ├─ index.html      ← built, self-contained game (open this)
-├─ build.py        ← bundles src/*.js into index.html
+├─ build.py        ← bundles src/*.js + assets/heads/*.png into index.html
+├─ tools/make_heads.py ← cuts heads out of the reference artwork
+├─ assets/heads/   ← transparent head cut-outs
 ├─ template.html
 └─ src/
    ├─ core.js      settings, input (keyboard/gamepad), Web Audio synth, announcer

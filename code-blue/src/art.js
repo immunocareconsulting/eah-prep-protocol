@@ -45,19 +45,19 @@ function blendPose(cur, target, k) {
 // ---------------- Character visual definitions ----------------
 const LOOKS = {
   martel: {
-    skin: '#7a4a2b', skinD: '#5a341d', skinL: '#93603c', hair: null, hairStyle: 'bald', beard: '#191210', beardStyle: 'full',
+    head: 'martel', skin: '#94572f', skinD: '#6e3d1f', skinL: '#ad6d42', hair: null, hairStyle: 'bald', beard: '#191210', beardStyle: 'full',
     eye: '#2a170c', outfit: 'coat', top: '#f5f7fa', topD: '#d6dde6', under: '#ffffff', pants: '#1d2a56', pantsD: '#141e40', shoe: '#20232c',
     sleeve: 'long', glove: null, smile: 'grin',
     thigh: 64, shin: 62, torso: 100, uArm: 45, fArm: 43, shoulder: 40, waist: 32, headRx: 25.5, headRy: 29.5, neck: 12, limbW: 23
   },
   ruben: {
-    skin: '#c88b5c', skinD: '#a46c42', skinL: '#dca172', hair: '#151112', hairStyle: 'slick', beard: '#1a1311', beardStyle: 'trim',
+    head: 'ruben', skin: '#c98a5e', skinD: '#a66a43', skinL: '#dca172', hair: '#151112', hairStyle: 'slick', beard: '#1a1311', beardStyle: 'trim',
     eye: '#2d1a0e', outfit: 'scrubs', top: '#1d2c63', topD: '#142050', under: '#f4f4f4', pants: '#1b2a5e', pantsD: '#121d46', shoe: '#2a2d36',
     sleeve: 'short', glove: null, smile: 'smirk',
     thigh: 63, shin: 61, torso: 98, uArm: 44, fArm: 42, shoulder: 39, waist: 33, headRx: 24, headRy: 28.5, neck: 11, limbW: 23
   },
   cesar: {
-    skin: '#cf9367', skinD: '#ad7249', skinL: '#e3aa7d', hair: '#121011', hairStyle: 'crop', beard: '#141010', beardStyle: 'dense',
+    head: 'cesar', skin: '#d0956d', skinD: '#ac7550', skinL: '#e3aa7d', hair: '#121011', hairStyle: 'crop', beard: '#141010', beardStyle: 'dense',
     eye: '#2b190d', outfit: 'polo', top: '#2b58c6', topD: '#1f43a0', under: '#2b58c6', pants: '#252b3d', pantsD: '#1a1f2e', shoe: '#1d1f26',
     sleeve: 'short', glove: '#8a66db', smile: 'soft',
     thigh: 62, shin: 60, torso: 99, uArm: 44, fArm: 42, shoulder: 41, waist: 35, headRx: 25, headRy: 28.5, neck: 11, limbW: 24
@@ -115,6 +115,35 @@ function drawLogo(c, x, y, s = 1) {
 }
 
 // ---------------- Head ----------------
+// Illustrated heads (cut from the reference artwork, embedded by build.py as HEAD_DATA).
+const HeadImages = {};
+if (typeof HEAD_DATA !== 'undefined') for (const k in HEAD_DATA) { const im = new Image(); im.onload = () => { HeadImages[k] = im; }; im.src = HEAD_DATA[k]; }
+function drawHeadAny(c, L, expr, t, blink) {
+  const im = L.head && HeadImages[L.head];
+  if (!im) return drawHead(c, L, expr, t, blink);
+  // neck stub so the faded bottom of the cut-out blends into the body
+  c.fillStyle = L.skinD; c.strokeStyle = INK; c.lineWidth = 2.5;
+  rr(c, -10, -16, 22, 24, 6); c.fill(); c.stroke();
+  const h = 86, w = h * im.width / im.height;
+  c.save();
+  // squash & stretch reactions
+  if (expr === 'shout') c.scale(1.04, 1.04);
+  if (expr === 'hurt' || expr === 'shock') { c.rotate(Math.sin(t * 0.8) * 0.06); c.scale(1.06, 0.95); }
+  c.drawImage(im, 2 - w / 2, -h + 8, w, h);
+  c.restore();
+  // cartoon overlays
+  if (expr === 'hurt' || expr === 'shock') {
+    c.fillStyle = '#8fd3ff'; c.strokeStyle = INK; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(-18, -62); c.quadraticCurveTo(-26, -50, -18, -47); c.quadraticCurveTo(-10, -50, -18, -62); c.fill(); c.stroke();
+  }
+  if (expr === 'ko') {
+    for (let i = 0; i < 3; i++) { const a = t * 0.15 + i * TAU / 3; star(c, 2 + Math.cos(a) * 30, -74 + Math.sin(a) * 8, 7, '#ffd23f'); }
+  }
+  if (expr === 'fierce' || expr === 'shout') {
+    c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 2.5;
+    for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(30, -50 + i * 10); c.lineTo(40, -54 + i * 10); c.stroke(); }
+  }
+}
 function drawHead(c, L, expr, t, blink) {
   const rx = L.headRx, ry = L.headRy, cx = 2, cy = -ry + 1;
   // neck
@@ -508,7 +537,7 @@ function drawCharacter(c, L, x, y, o) {
   c.save(); c.translate(hip.x, hip.y); drawTails(c, L, p.lean, p.fT, p.bT); c.restore();
   // head
   c.save(); c.translate(neck.x, neck.y + 4); c.rotate(p.lean * 0.6 + p.head); c.scale(1.13, 1.13);
-  drawHead(c, L, o.expr || 'normal', o.t || 0, o.blink);
+  drawHeadAny(c, L, o.expr || 'normal', o.t || 0, o.blink);
   c.restore();
   drawArm(fa, true);
   if (o.prop) drawProp(c, o.prop, fa.hand, fa.a, o.t || 0);
@@ -556,8 +585,9 @@ function drawProp(c, prop, h, a, t) {
 // Bust portrait (select screen / HUD)
 function drawBust(c, L, x, y, size, expr = 'normal', t = 0, facing = 1) {
   c.save(); c.translate(x, y); c.scale(size * facing, size);
+  if (L.head && HeadImages[L.head]) c.translate(0, 20);
   c.save(); c.translate(0, L.torso + 22); drawTorso(c, L, t); c.restore();
-  c.save(); c.translate(0, 26); drawHead(c, L, expr, t, false); c.restore();
+  c.save(); c.translate(0, 26); drawHeadAny(c, L, expr, t, false); c.restore();
   c.restore();
 }
 

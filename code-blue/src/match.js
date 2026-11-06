@@ -408,7 +408,7 @@ class Match {
     c.save();
     c.beginPath(); c.arc(x0 + dir * 50, 66, 48, 0, TAU); c.fillStyle = f.def.color; c.fill(); c.lineWidth = 4; c.strokeStyle = '#fff'; c.stroke();
     c.save(); c.beginPath(); c.arc(x0 + dir * 50, 66, 46, 0, TAU); c.clip();
-    drawBust(c, f.L, x0 + dir * 50, 28, 1.45, f.hp < f.maxHp * 0.25 ? 'hurt' : 'normal', this.frame, side === 0 ? 1 : -1);
+    drawBust(c, f.L, x0 + dir * 50, 40, 1.45, f.hp < f.maxHp * 0.25 ? 'hurt' : 'normal', this.frame, side === 0 ? 1 : -1);
     c.restore(); c.restore();
     // health bar
     c.save();
