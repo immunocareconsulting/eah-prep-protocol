@@ -636,6 +636,22 @@ class Fighter {
     blendPose(this.pose, target, k);
     this.airDraw = air && !['air', 'down'].includes(s);
   }
+  // Which illustrated pose to show when this fighter has a sprite set
+  spriteKey() {
+    switch (this.state) {
+      case 'walk': return Math.floor(this.g.frame / 10) % 2 ? 'walk2' : 'walk1';
+      case 'jump': case 'dodge': return 'jump';
+      case 'attack': return this.atk ? this.atk.name.replace(/^j/, '') : 'idle';
+      case 'cast': return 'special';
+      case 'block': case 'blockstun': return 'block';
+      case 'hit': case 'stun': case 'freeze': case 'trap': case 'ulthit': case 'air': return 'hit';
+      case 'down': return 'down';
+      case 'ult': return 'ultimate';
+      case 'win': return 'win';
+      case 'lose': return this.ko ? 'down' : 'lose';
+      default: return 'idle';
+    }
+  }
   winPose() {
     const t = this.g.frame;
     const id = this.def.id;
@@ -682,7 +698,7 @@ class Fighter {
     }
     if (this.flash > 4) c.filter = 'brightness(1.9) saturate(0.6)';
     drawCharacter(c, this.L, x, this.y - (this.state === 'cast' && this.spec && this.spec.pose === 'sit' ? 50 : 0), {
-      pose: this.pose, facing: this.facing, expr, t: g.frame, blink: this.blink && expr === 'normal', prop, air: this.airDraw, alpha: flicker ? 0.4 : 1
+      pose: this.pose, facing: this.facing, expr, t: g.frame, spriteKey: this.spriteKey(), blink: this.blink && expr === 'normal', prop, air: this.airDraw, alpha: flicker ? 0.4 : 1
     });
     c.restore();
 

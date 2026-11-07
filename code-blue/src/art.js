@@ -475,6 +475,7 @@ function drawTails(c, L, lean, fT, bT) {
 // ---------------- Full fighter ----------------
 // opts: { pose, facing, expr, t, blink, prop, alpha, tint, scale }
 function drawCharacter(c, L, x, y, o) {
+  if (o.sprite !== false && hasSprites(L.id)) return drawSprite(c, L.id, o.spriteKey || 'idle', x, y, o);
   const p = o.pose;
   c.save();
   c.translate(x, y);
@@ -580,6 +581,65 @@ function drawProp(c, prop, h, a, t) {
     c.strokeStyle = '#ccc'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(28, 0); c.stroke();
   }
   c.restore();
+}
+
+// ---------------- Illustrated art: showcase pictures & pose sprites ----------------
+for (const k in LOOKS) LOOKS[k].id = k;
+function loadImg(src, cb) { const im = new Image(); im.onload = () => cb(im); im.src = src; }
+const ShowcaseImages = {};
+if (typeof SHOWCASE_DATA !== 'undefined') for (const k in SHOWCASE_DATA) loadImg(SHOWCASE_DATA[k], im => { ShowcaseImages[k] = im; });
+const hasShowcase = id => !!ShowcaseImages[id];
+// Draw a showcase illustration "cover"-fitted into a rounded frame. fx/fy = focus point (0..1) kept in view.
+function drawShowcase(c, id, x, y, w, h, o = {}) {
+  const im = ShowcaseImages[id]; if (!im) return false;
+  const fx = o.fx ?? 0.5, fy = o.fy ?? 0.3, r = o.radius ?? 14, zoom = o.zoom || 1;
+  const s = Math.max(w / im.width, h / im.height) * zoom;
+  const dw = im.width * s, dh = im.height * s;
+  const dx = clamp(x + w / 2 - fx * dw, x + w - dw, x), dy = clamp(y + h / 2 - fy * dh, y + h - dh, y);
+  c.save();
+  if (o.glow) { c.shadowColor = o.glow; c.shadowBlur = 30; rr(c, x, y, w, h, r); c.fillStyle = '#000'; c.fill(); c.shadowBlur = 0; }
+  rr(c, x, y, w, h, r); c.clip();
+  if (o.flip) { c.translate(x * 2 + w, 0); c.scale(-1, 1); }
+  c.drawImage(im, dx, dy, dw, dh);
+  c.restore();
+  if (o.border !== false) { c.save(); rr(c, x, y, w, h, r); c.strokeStyle = o.border || '#fff'; c.lineWidth = 4; c.stroke(); c.restore(); }
+  return true;
+}
+
+// Pose sprites: SPRITE_DATA[id] = { scale, poses: { idle: {src, ax, ay}, ... } } (tools/make_sprites.py).
+// Images face RIGHT; (ax, ay) is the point between the feet, in image pixels.
+const SPRITE_POSES = ['idle', 'walk1', 'walk2', 'jump', 'lp', 'hp', 'lk', 'hk', 'block', 'hit', 'down', 'special', 'ultimate', 'win', 'lose'];
+const SPRITE_FALLBACK = { walk1: 'idle', walk2: 'walk1', jump: 'idle', lp: 'hp', hp: 'special', lk: 'hk', hk: 'lp', block: 'idle', hit: 'idle', down: 'hit', special: 'hp', ultimate: 'special', win: 'idle', lose: 'hit' };
+const SpriteSets = {};
+if (typeof SPRITE_DATA !== 'undefined') for (const id in SPRITE_DATA) {
+  const set = { scale: SPRITE_DATA[id].scale, poses: {} };
+  for (const k in SPRITE_DATA[id].poses) { const d = SPRITE_DATA[id].poses[k]; loadImg(d.src, im => { set.poses[k] = { im, ax: d.ax, ay: d.ay }; }); }
+  SpriteSets[id] = set;
+}
+const hasSprites = id => !!(SpriteSets[id] && SpriteSets[id].poses.idle);
+function spritePose(set, key) {
+  for (let i = 0; i < 8 && key; i++) { if (set.poses[key]) return set.poses[key]; key = SPRITE_FALLBACK[key]; }
+  return set.poses.idle;
+}
+function drawSprite(c, id, key, x, y, o) {
+  const set = SpriteSets[id], sp = spritePose(set, key), k = set.scale * (o.scale || 1);
+  const t = o.t || 0;
+  c.save(); c.translate(x, y);
+  c.scale(o.facing || 1, 1);
+  if (o.alpha != null) c.globalAlpha = o.alpha;
+  // keep single drawings alive: breathing on idle, squash on hits
+  let sx = 1, sy = 1;
+  if (key === 'idle' || key === 'win') sy = 1 + Math.sin(t * 0.09) * 0.012;
+  if (key === 'hit') { sx = 1.04; sy = 0.97; c.rotate(-0.06); }
+  if (o.expr === 'shock') c.translate(Math.sin(t * 1.3) * 3, 0);
+  c.scale(sx, sy);
+  c.drawImage(sp.im, -sp.ax * k, -sp.ay * k, sp.im.width * k, sp.im.height * k);
+  c.restore();
+  if (o.expr === 'ko' || o.expr === 'hurt') {
+    const hy = y - sp.ay * k * 0.92;
+    if (o.expr === 'ko') for (let i = 0; i < 3; i++) { const a = t * 0.15 + i * TAU / 3; star(c, x + Math.cos(a) * 34, hy + Math.sin(a) * 8, 8, '#ffd23f'); }
+  }
+  return { hand: { x: 60, y: -200 }, neck: { x: 0, y: -240 }, hip: { x: 0, y: -130 } };
 }
 
 // Bust portrait (select screen / HUD)

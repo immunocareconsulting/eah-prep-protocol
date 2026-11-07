@@ -59,6 +59,30 @@ Touch screens get an on-screen D-pad and buttons automatically. You can force th
 - **Synthesized sound.** Music and sound effects are generated with Web Audio; there are no recorded audio files. The announcer voice uses the browser's speech engine, so it sounds different per device. Turn it off in Settings and the callouts stay on screen.
 - **No external framework.** Phaser/React aren't used, so the game works anywhere an Artifact runs. It's plain HTML5 Canvas with a fixed 60 FPS update loop.
 
+## Adding illustrated art
+
+Everything below is picked up automatically by `python3 build.py`, and any fighter without it keeps the drawn look.
+
+**Showcase picture (one per fighter).** Save a dramatic full-body illustration as `assets/showcase/<id>.jpg` (about 630×840, portrait). It's used on the select screen, VS screen, ultimate cut-in, victory report and arcade ending. Cesar already has one.
+
+**Fighting poses (sprite sheet).** Generate 15 poses of the character in one image, on a plain white background, all facing right, in this order:
+
+| Row | Poses |
+|---|---|
+| 1 | idle stance · walk step 1 · walk step 2 · jump |
+| 2 | light punch · heavy punch · light kick · heavy kick |
+| 3 | block · getting hit · knocked down (lying) · special move |
+| 4 | ultimate · victory · defeated (kneeling) |
+
+Then run:
+
+```
+python3 tools/make_sprites.py cesar --sheet cesar_sheet.png
+python3 build.py
+```
+
+The tool finds each figure, removes the background, sizes every pose to match the idle pose and lines up the feet. Use `--order` if your sheet is laid out differently, or `--folder` with one image per pose (`idle.png`, `walk1.png`, …). Only `idle` is required; missing poses fall back to a similar one. It needs `pip install opencv-python-headless numpy`.
+
 ## Building a fuller standalone version
 
 1. **Art:** commission or generate sprite sheets per fighter, one row per animation state: idle, walk, run, jump, LP, HP, LK, HK, block, hit, knockdown, special, ultimate, victory, defeat. Suggested size is about 512×512 per frame at 12–24 fps. Keep the current cartoon style and use the reference photos for likeness.
@@ -72,7 +96,10 @@ Touch screens get an on-screen D-pad and buttons automatically. You can force th
 code-blue/
 ├─ index.html      ← built, self-contained game (open this)
 ├─ build.py        ← bundles src/*.js + assets/heads/*.png into index.html
-├─ tools/make_heads.py ← cuts heads out of the reference artwork
+├─ tools/make_heads.py   ← cuts heads out of the reference artwork
+├─ tools/make_sprites.py ← turns a pose sprite sheet into fighting sprites
+├─ assets/showcase/      ← one full illustration per fighter
+├─ assets/sprites/<id>/  ← pose sprites + sprites.json
 ├─ assets/heads/   ← transparent head cut-outs
 ├─ template.html
 └─ src/

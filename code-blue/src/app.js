@@ -211,7 +211,8 @@ function drawMenu(c) {
   bgGrad(c);
   const hi = (App.menuSel || 0) % 5;
   c.save(); c.translate(260, 0); lineup(c, H + 10, 0.85, App.t, -1); c.restore();
-  drawCharacter(c, ROSTER[hi].look, 900, 640, { pose: POSES.win, facing: -1, t: App.t, scale: 1.45, expr: 'happy' });
+  if (!drawShowcase(c, ROSTER[hi].id, 720, 110, 400, 530, { fy: 0.4, glow: ROSTER[hi].color, flip: true }))
+    drawCharacter(c, ROSTER[hi].look, 900, 640, { pose: POSES.win, facing: -1, t: App.t, scale: 1.45, expr: 'happy', spriteKey: 'win' });
   c.fillStyle = 'rgba(5,10,30,.45)'; c.fillRect(0, 0, 560, H);
   logo(c, 290, 70, 0.48);
   MAIN_MENU.forEach((m, i) => drawButton(c, 70, 200 + i * 66, 420, 56, m.label, i === App.menuSel, i === App.menuSel ? m.sub : null));
@@ -318,7 +319,8 @@ function drawSelect(c) {
   const px = k === 1 ? 1060 : 200;
   c.save(); c.globalAlpha = 0.25; c.fillStyle = def.color; c.beginPath(); c.arc(px, 330, 170, 0, TAU); c.fill(); c.restore();
   const b = Math.sin(App.t * 0.09) * 0.06;
-  drawCharacter(c, def.look, px, 470, { pose: Object.assign({}, POSES.idle, { fK: POSES.idle.fK + b * 2, bK: POSES.idle.bK + b * 2 }), facing: flip, t: App.t, scale: 1.25, blink: App.t % 200 < 6 });
+  if (!drawShowcase(c, def.id, px - 150, 85, 300, 395, { fy: 0.35, glow: def.color, border: def.color }))
+    drawCharacter(c, def.look, px, 470, { pose: Object.assign({}, POSES.idle, { fK: POSES.idle.fK + b * 2, bK: POSES.idle.bK + b * 2 }), facing: flip, t: App.t, scale: 1.25, blink: App.t % 200 < 6 });
   // info panel
   const ix = k === 1 ? 70 : 390;
   rr(c, ix, 80, 820, 390, 16); c.fillStyle = 'rgba(5,10,30,.6)'; c.fill(); c.strokeStyle = def.color; c.lineWidth = 3; c.stroke();
@@ -344,7 +346,8 @@ function drawSelect(c) {
     c.save();
     rr(c, R2.x, R2.y, R2.w, R2.h, 14); c.fillStyle = isCur ? r.color : 'rgba(20,40,90,.9)'; c.fill();
     c.save(); rr(c, R2.x, R2.y, R2.w, R2.h, 14); c.clip();
-    if (PortraitImages[r.id]) { const im = PortraitImages[r.id]; const s = Math.max(R2.w / im.width, R2.h / im.height); c.drawImage(im, R2.x + (R2.w - im.width * s) / 2, R2.y, im.width * s, im.height * s); }
+    if (hasShowcase(r.id)) drawShowcase(c, r.id, R2.x, R2.y, R2.w, R2.h, { fx: 0.44, fy: 0.11, zoom: 3.0, border: false, radius: 0 });
+    else if (PortraitImages[r.id]) { const im = PortraitImages[r.id]; const s = Math.max(R2.w / im.width, R2.h / im.height); c.drawImage(im, R2.x + (R2.w - im.width * s) / 2, R2.y, im.width * s, im.height * s); }
     else drawBust(c, r.look, R2.x + R2.w / 2 - 6, R2.y + 72, 2.3, isCur ? 'happy' : 'normal', App.t);
     c.restore();
     c.lineWidth = isCur ? 6 : 2; c.strokeStyle = isCur ? '#fff' : '#5f8fe0'; rr(c, R2.x, R2.y, R2.w, R2.h, 14); c.stroke();
@@ -393,8 +396,11 @@ function drawVS(c) {
   c.fillStyle = 'rgba(5,10,30,.45)'; c.fillRect(0, 0, W, H);
   for (let i = 0; i < 24; i++) { c.fillStyle = 'rgba(255,255,255,.08)'; c.fillRect(((i * 211 + t * 30) % (W + 300)) - 150, (i * 53) % H, 200, 4); }
   const sl = Math.min(1, t / 25);
-  drawCharacter(c, p1.look, lerp(-300, 300, easeOutBack(sl)), 690, { pose: POSES.armsx, facing: 1, t, scale: 1.7, expr: 'fierce' });
-  drawCharacter(c, p2.look, lerp(W + 300, W - 300, easeOutBack(sl)), 690, { pose: POSES.armsx, facing: -1, t, scale: 1.7, expr: 'fierce' });
+  const es = easeOutBack(sl);
+  if (!drawShowcase(c, p1.id, lerp(-450, 90, es), 168, 400, 530, { fy: 0.4, glow: p1.color }))
+    drawCharacter(c, p1.look, lerp(-300, 300, es), 690, { pose: POSES.armsx, facing: 1, t, scale: 1.7, expr: 'fierce', spriteKey: 'idle' });
+  if (!drawShowcase(c, p2.id, lerp(W + 50, W - 490, es), 168, 400, 530, { fy: 0.4, glow: p2.color, flip: true }))
+    drawCharacter(c, p2.look, lerp(W + 300, W - 300, es), 690, { pose: POSES.armsx, facing: -1, t, scale: 1.7, expr: 'fierce', spriteKey: 'idle' });
   const vs = 1 + Math.sin(t * 0.2) * 0.06;
   c.save(); c.translate(W / 2, H / 2 - 40); c.scale(vs, vs); burst(c, 110, 14, '#ffd23f'); bigText(c, 'VS', 0, 4, 130, '#d0121b', '#fff'); c.restore();
   if (t > 20) {
@@ -438,8 +444,9 @@ function drawResult(c) {
   c.fillStyle = 'rgba(5,10,30,.35)'; c.fillRect(0, 0, W, H);
   const humanWon = res.winner === 0 || App.mode === 'versus';
   bigText(c, App.mode === 'versus' ? `PLAYER ${res.winner + 1} WINS!` : humanWon ? 'SHIFT COMPLETE!' : 'YOU\'VE BEEN DISCHARGED…', W / 2, 54, 70, humanWon ? '#ffd23f' : '#ff3b3b');
-  drawCharacter(c, w.L, 250, 600, { pose: w.winPose(), facing: 1, t: App.t, scale: 1.45, expr: 'happy' });
-  c.save(); c.globalAlpha = 0.85; drawCharacter(c, l.L, 1150, 600, { pose: POSES.lose, facing: -1, t: App.t, scale: 1.0, expr: 'hurt' }); c.restore();
+  if (!drawShowcase(c, w.def.id, 70, 155, 360, 300, { fy: 0.3, glow: w.def.color }))
+    drawCharacter(c, w.L, 250, 600, { pose: w.winPose(), facing: 1, t: App.t, scale: 1.45, expr: 'happy', spriteKey: 'win' });
+  c.save(); c.globalAlpha = 0.85; drawCharacter(c, l.L, 1150, 600, { pose: POSES.lose, facing: -1, t: App.t, scale: 1.0, expr: 'hurt', spriteKey: 'lose' }); c.restore();
   bigText(c, w.def.name, 250, 130, 50, w.def.color);
   rr(c, 80, 470, 340, 70, 12); c.fillStyle = 'rgba(255,255,255,.95)'; c.fill(); c.strokeStyle = INK; c.lineWidth = 3; c.stroke();
   c.fillStyle = '#13284f'; c.font = 'italic bold 17px sans-serif'; c.textAlign = 'center'; wrapText(c, `"${App.quote || ''}"`, 250, 505, 310, 20);
@@ -464,7 +471,8 @@ function drawResult(c) {
 function drawEnding(c) {
   bgGrad(c, '#0b1a45', '#2c8a5a');
   const p = App.sel.chosen[0];
-  drawCharacter(c, p.look, W / 2, 640, { pose: POSES.win, facing: 1, t: App.t, scale: 1.6, expr: 'happy' });
+  if (!drawShowcase(c, p.id, W / 2 - 170, 280, 340, 380, { fy: 0.35, glow: p.color }))
+    drawCharacter(c, p.look, W / 2, 640, { pose: POSES.win, facing: 1, t: App.t, scale: 1.6, expr: 'happy', spriteKey: 'win' });
   bigText(c, 'SHIFT COMPLETE!', W / 2, 80, 96, '#ffd23f');
   bigText(c, `${p.name} SURVIVED THE HEALTHCARE SHOWDOWN!`, W / 2, 160, 36, '#fff');
   c.fillStyle = '#fff'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center';

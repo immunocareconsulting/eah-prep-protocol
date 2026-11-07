@@ -356,7 +356,9 @@ class Match {
       c.fillStyle = f.def.color; c.beginPath(); c.moveTo(0, -110); c.lineTo(W, -150); c.lineTo(W, 90); c.lineTo(0, 130); c.fill();
       c.fillStyle = 'rgba(0,0,0,.35)'; for (let i = 0; i < 30; i++) c.fillRect(((i * 97 + k.t * 40) % (W + 200)) - 100, -150 + (i * 37) % 240, 120, 3);
       c.save(); c.beginPath(); c.moveTo(0, -110); c.lineTo(W, -150); c.lineTo(W, 90); c.lineTo(0, 130); c.clip();
-      drawBust(c, f.L, f.side === 0 ? 260 + (1 - p) * -300 : W - 260 + (1 - p) * 300, -40, 3.4, 'shout', k.t, f.side === 0 ? 1 : -1);
+      const bx = f.side === 0 ? 260 + (1 - p) * -300 : W - 260 + (1 - p) * 300;
+      if (!drawShowcase(c, f.def.id, bx - 210, -165, 420, 300, { fy: 0.22, border: false, radius: 0, flip: f.side === 1 }))
+        drawBust(c, f.L, bx, -40, 3.4, 'shout', k.t, f.side === 0 ? 1 : -1);
       c.restore();
       bigText(c, k.def.name, f.side === 0 ? W * 0.66 : W * 0.34, 0, 66, '#fff', INK);
       bigText(c, 'ULTIMATE', f.side === 0 ? W * 0.66 : W * 0.34, -70, 30, '#ffd23f', INK);
