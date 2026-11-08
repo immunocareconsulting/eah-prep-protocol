@@ -21,7 +21,7 @@ import cv2, numpy as np
 
 POSES = ['idle', 'walk1', 'walk2', 'jump', 'lp', 'hp', 'lk', 'hk', 'block', 'hit', 'down', 'special', 'ultimate', 'win', 'lose']
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-WORK_PX = 480   # idle-pose height in sprite pixels (keeps the single-file game small)
+WORK_PX = 600   # idle-pose height in sprite pixels
 
 
 def read(path):
@@ -149,6 +149,38 @@ def split_grid(img, alpha, order, cols, rows):
     return out
 
 
+_SR = {}
+def upscale2(rgba, model):
+    """2x super-resolution (OpenCV dnn_superres; models in ~/.sr). Colours are bled into the
+    transparent border first so the network doesn't pull dark halos into the edges."""
+    if model not in _SR:
+        sr = cv2.dnn_superres.DnnSuperResImpl_create()
+        sr.readModel(str(pathlib.Path.home() / '.sr' / f'{model.upper()}_x2.pb')); sr.setModel(model, 2); _SR[model] = sr
+    rgb, a = np.ascontiguousarray(rgba[..., :3]), rgba[..., 3]
+    hole = ((a < 10) & (cv2.dilate((a >= 10).astype(np.uint8), np.ones((9, 9), np.uint8)) > 0)).astype(np.uint8)
+    rgb = cv2.inpaint(rgb, hole, 3, cv2.INPAINT_TELEA)
+    up = _SR[model].upsample(rgb)
+    if model == 'fsrcnn':                                     # light unsharp mask to crisp up line art
+        up = cv2.addWeighted(up, 1.5, cv2.GaussianBlur(up, (0, 0), 1.2), -0.5, 0)
+    au = cv2.resize(a, (up.shape[1], up.shape[0]), interpolation=cv2.INTER_CUBIC)
+    return np.dstack([up, au])
+
+
+def erase_captions(img, bands):
+    """Inside each band, erase only the dark-blue caption boxes (and their white text)."""
+    if img.shape[2] == 3: img = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+    b, g, r, a = [img[..., i].astype(np.int16) for i in range(4)]
+    for band in bands.split(','):
+        y0, y1 = map(int, band.split('-'))
+        lab = ((b > 70) & (r < 50) & (g < 85) & (b - g > 35) & (a > 0))[y0:y1].astype(np.uint8)
+        lab = cv2.dilate(lab, np.ones((9, 25), np.uint8))
+        n, cc, st, _ = cv2.connectedComponentsWithStats(lab)
+        for i in range(1, n):
+            x, y, w, h, area = st[i]
+            if w > 60: img[y0 + y:y0 + y + h, max(0, x - 4):x + w + 4, 3] = 0
+    return img
+
+
 def anchor(rgba, pose):
     """(x, y) of the point between the feet: torso centre horizontally, lowest pixel vertically."""
     a = rgba[..., 3] > 60
@@ -170,15 +202,14 @@ def main():
     ap.add_argument('--cut-bands', help='pixel row ranges to erase first (caption strips), e.g. 318-352,643-680')
     ap.add_argument('--panel-normalize', action='store_true',
                     help='poses came from differently sized panels: rescale each panel row to consistent proportions')
+    ap.add_argument('--upscale', choices=['edsr', 'fsrcnn'], help='2x AI upscale of low-resolution source poses first')
     ap.add_argument('--height', type=float, default=300, help='idle height in game units (drawn fighters are ~300)')
     args = ap.parse_args()
 
     if args.sheet:
         img = read(args.sheet)
         if args.cut_bands:
-            if img.shape[2] == 3: img = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
-            for band in args.cut_bands.split(','):
-                y0, y1 = map(int, band.split('-')); img[y0:y1, :, 3] = 0
+            img = erase_captions(img, args.cut_bands)
         order = [p.strip() for p in args.order.split(',')]
         if args.grid:
             cols, rows = map(int, args.grid.lower().split('x'))
@@ -194,6 +225,9 @@ def main():
     if 'idle' not in poses:
         raise SystemExit('need an idle pose')
 
+    if args.upscale:
+        for k in list(poses):
+            poses[k] = upscale2(poses[k], args.upscale); print(f'  upscaled {k}', flush=True)
     out = ROOT / 'assets' / 'sprites' / args.fighter
     if out.exists(): shutil.rmtree(out)
     out.mkdir(parents=True)
@@ -221,7 +255,7 @@ def main():
         ys, xs = np.where(im[..., 3] > 8)
         im = im[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
         ax, ay = anchor(im, pose)
-        cv2.imwrite(str(out / f'{pose}.webp'), im, [cv2.IMWRITE_WEBP_QUALITY, 90])
+        cv2.imwrite(str(out / f'{pose}.webp'), im, [cv2.IMWRITE_WEBP_QUALITY, 86])
         conf['poses'][pose] = {'ax': round(float(ax), 1), 'ay': round(float(ay), 1)}
         print(f'  {pose:9s} {im.shape[1]:4d}x{im.shape[0]:<4d} feet at ({ax:.0f},{ay:.0f})')
     (out / 'sprites.json').write_text(json.dumps(conf, indent=1))

@@ -94,15 +94,13 @@ def eah_logo(img, relaxed=False):
         sel = (box[..., 3] > 200) & (whiteish | blue[Y0:Y1, X0:X1])
         box[..., :3][sel] = fill
         pil = Image.fromarray(img); d = ImageDraw.Draw(pil)
-        # EAH mark: blue ring with swirl + wordmark
-        cx, cy, R = x + w / 2, y + h / 2, s * 0.55
-        d.ellipse([cx - R, cy - R, cx + R, cy + R], fill=(38, 120, 210, 255), outline=(220, 235, 255, 255), width=max(1, int(R / 5)))
-        d.arc([cx - R * 0.55, cy - R * 0.55, cx + R * 0.55, cy + R * 0.55], 30, 300, fill=(255, 255, 255, 255), width=max(1, int(R / 4)))
-        try: font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', max(6, int(s * 0.42)))
-        except OSError: font = ImageFont.load_default()
-        for k, word in enumerate(['EQUITY ALLIANCE', 'HEALTH']):
-            tw = d.textlength(word, font=font)
-            d.text((cx - tw / 2, cy + R * 1.25 + k * s * 0.5), word, fill=(235, 242, 255, 255), font=font)
+        # paste the real Equity Alliance Health badge over the erased area
+        plate = Image.open(pathlib.Path(__file__).resolve().parent.parent / 'assets' / 'eah_logo.png').convert('RGBA')
+        pw = int(min((X1 - X0) * 0.95, W)); ph = int(pw * plate.height / plate.width)
+        if ph > (Y1 - Y0) * 1.05: ph = int((Y1 - Y0) * 1.05); pw = int(ph * plate.width / plate.height)
+        plate = plate.resize((max(4, pw), max(4, ph)), Image.LANCZOS)
+        cx = (X0 + X1) // 2; cy = (Y0 + Y1) // 2
+        pil.alpha_composite(plate, (max(0, cx - pw // 2), max(0, cy - ph // 2)))
         img[:] = np.array(pil); done += 1
     if not done and not relaxed:
         return eah_logo(img, relaxed=True)

@@ -21,11 +21,14 @@ ITEMS.virus = (c, s = 1, col = '#b07cff') => {
   dot(c, 0, 0, 13, col, INK, 2.5); dot(c, -4, -3, 3, 'rgba(255,255,255,.6)', null);
   c.restore();
 };
+let EahLogoImg = null;
+if (typeof EAH_LOGO !== 'undefined' && EAH_LOGO) loadImg(EAH_LOGO, im => { EahLogoImg = im; });
 ITEMS.briefcase = (c, s = 1) => {
   c.save(); c.scale(s, s);
   rr(c, -24, -78, 48, 18, 6); c.strokeStyle = '#111'; c.lineWidth = 7; c.stroke();
   rr(c, -90, -64, 180, 124, 10); c.fillStyle = '#17171b'; c.fill(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke();
   c.fillStyle = 'rgba(255,255,255,.08)'; c.fillRect(-84, -58, 168, 10);
+  if (EahLogoImg) { const w = 140, h = w * EahLogoImg.height / EahLogoImg.width; c.drawImage(EahLogoImg, -w / 2, -2 - h / 2, w, h); c.restore(); return; }
   dot(c, 0, -14, 18, '#2678d2', '#dbe9ff', 3);
   c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.arc(0, -14, 9, 0.5, 5.2); c.stroke();
   c.fillStyle = '#eaf2ff'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText('EQUITY ALLIANCE', 0, 22); c.font = 'bold 10px sans-serif'; c.fillText('H E A L T H', 0, 38);
@@ -227,5 +230,7 @@ const ROSTER = [
   }
 ];
 function byBase(id) { return BASE_ROSTER.find(r => r.id === id); }
-ROSTER.forEach(r => { r.look = LOOKS[r.id]; r.ult = ULTS[r.id]; });
+// Drawn height: sprites are authored at 300 units; everyone is scaled up, Martel (6'4") the most.
+const HEIGHTS = { martel: 1.25, gordon: 1.15, ruben: 1.13, cesar: 1.14, dhvani: 1.08, maddy: 1.1 };
+ROSTER.forEach(r => { r.look = LOOKS[r.id]; r.ult = ULTS[r.id]; r.size = HEIGHTS[r.id] || 1.12; });
 const byId = id => ROSTER.find(r => r.id === id);

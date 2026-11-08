@@ -115,7 +115,10 @@ class Match {
       if (k.t < 45) { tx = k.caster.x; tz = 1.35; } else { tx = (k.target.x * 2 + k.caster.x) / 3; tz = 1.06; }
     } else if (this.camPunch && this.camPunch.t > 0) { this.camPunch.t--; tx = lerp(tx, this.camPunch.f.x, 0.4); tz += 0.1; }
     if (this.phase === 'ko' && this.pt < 70 && this.loser) { tx = this.loser.x; tz = 1.3; }
-    cam.zoom = lerp(cam.zoom, tz, 0.08);
+    // headroom: keep the tallest point of both fighters (jumps, raised arms) below the health bars
+    const top = Math.min(...this.fighters.map(f => f.y - 330 * f.size - 25));
+    tz = Math.max(0.8, Math.min(tz, (640 - 125) / Math.max(1, FLOOR - top)));
+    cam.zoom = lerp(cam.zoom, tz, tz < cam.zoom ? 0.3 : 0.08);
     cam.x = lerp(cam.x, tx, 0.12);
     const half = W / 2 / cam.zoom;
     cam.x = clamp(cam.x, half, STAGE_W - half);

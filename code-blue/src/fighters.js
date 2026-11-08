@@ -15,7 +15,7 @@ const NORMALS = {
 };
 
 // ---------- helpers used by specials ----------
-function handPos(f, dy = -190) { return { x: f.x + f.facing * 70, y: f.y + dy }; }
+function handPos(f, dy = -190) { const s = f.size || 1; return { x: f.x + f.facing * 70 * s, y: f.y + dy * s }; }
 function shoot(f, g, o) {
   const p = handPos(f, o.dy ?? -190);
   const pr = new Projectile(g, f, Object.assign({ x: p.x, y: p.y, vx: f.facing * (o.speed || 10) }, o));
@@ -399,7 +399,7 @@ BASE_ROSTER.forEach(r => { r.look = LOOKS[r.id]; r.ult = ULTS[r.id]; });
 // ============================================================
 class Fighter {
   constructor(def, side, g) {
-    this.def = def; this.L = def.look; this.side = side; this.g = g;
+    this.def = def; this.L = def.look; this.side = side; this.g = g; this.size = def.size || 1;
     this.maxHp = 1000; this.pose = Object.assign({}, POSES.idle);
     this.stats = { dmg: 0, hits: 0, attacks: 0, maxCombo: 0, specials: 0, ults: 0, blocks: 0, taken: 0 };
     this.resetRound(side === 0 ? STAGE_W / 2 - 260 : STAGE_W / 2 + 260);
@@ -415,9 +415,10 @@ class Fighter {
   }
   grounded() { return this.y >= FLOOR - 0.5; }
   hurtbox() {
-    if (this.state === 'down') return { x: this.x - 90, y: this.y - 40, w: 180, h: 40 };
-    if (this.state === 'dodge' || this.state === 'block' && false) return { x: this.x - 34, y: this.y - 160, w: 68, h: 160 };
-    return { x: this.x - 36, y: this.y - 262, w: 72, h: 262 };
+    const s = this.size;
+    if (this.state === 'down') return { x: this.x - 90 * s, y: this.y - 40, w: 180 * s, h: 40 };
+    if (this.state === 'dodge') return { x: this.x - 34 * s, y: this.y - 160 * s, w: 68 * s, h: 160 * s };
+    return { x: this.x - 36 * s, y: this.y - 262 * s, w: 72 * s, h: 262 * s };
   }
   hittable() { return !this.ko && this.invuln <= 0 && !['down', 'getup', 'win', 'lose', 'intro', 'ult'].includes(this.state) && !(this.state === 'dodge' && this.st > 2 && this.st < 18); }
   isBlockingFrom(srcX) {
@@ -515,7 +516,7 @@ class Fighter {
         if (f === a.s && a.name === 'hp') this.vx += this.facing * 3;
         if (f >= a.s && f < a.s + a.a && !this.atkHit) {
           const b = a.box;
-          const box = { x: this.facing > 0 ? this.x + b[0] : this.x - b[0] - b[2], y: this.y + b[1], w: b[2], h: b[3] };
+          const s = this.size, box = { x: this.facing > 0 ? this.x + b[0] * s : this.x - (b[0] + b[2]) * s, y: this.y + b[1] * s, w: b[2] * s, h: b[3] * s };
           if (opp.hittable() && overlap(box, opp.hurtbox())) {
             this.atkHit = true;
             g.applyHit(this, opp, { dmg: a.dmg, stun: a.stun, kb: a.kb, launch: a.launch, sfx: a.sfx, shake: a.shake, energy: a.energy, burst: a.burst, normal: true }, this.x);
@@ -666,7 +667,7 @@ class Fighter {
     const g = this.g;
     // shadow
     const sh = clamp(1 - (FLOOR - this.y) / 400, 0.3, 1);
-    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(this.x, FLOOR + 4, 60 * sh, 12 * sh, 0, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(this.x, FLOOR + 4, 60 * sh * this.size, 12 * sh, 0, 0, TAU); c.fill();
 
     // auras
     if (this.status.vein > 0) {
@@ -706,17 +707,17 @@ class Fighter {
     }
     if (this.flash > 4) c.filter = 'brightness(1.9) saturate(0.6)';
     drawCharacter(c, this.L, x, this.y - (this.state === 'cast' && this.spec && this.spec.pose === 'sit' ? 50 : 0), {
-      pose: this.pose, facing: this.facing, expr, t: g.frame, spriteKey: this.spriteKey(), blink: this.blink && expr === 'normal', prop, air: this.airDraw, alpha: flicker ? 0.4 : 1
+      pose: this.pose, facing: this.facing, expr, t: g.frame, spriteKey: this.spriteKey(), scale: this.size, blink: this.blink && expr === 'normal', prop, air: this.airDraw, alpha: flicker ? 0.4 : 1
     });
     c.restore();
 
     // status overlays
     if (this.state === 'freeze') {
-      c.save(); c.globalAlpha = 0.45; c.fillStyle = '#9fe4ff'; rr(c, this.x - 70, this.y - 300, 140, 300, 20); c.fill();
+      c.save(); c.globalAlpha = 0.45; c.fillStyle = '#9fe4ff'; rr(c, this.x - 70 * this.size, this.y - 300 * this.size, 140 * this.size, 300 * this.size, 20); c.fill();
       c.globalAlpha = 0.9; c.strokeStyle = '#e8fbff'; c.lineWidth = 3; c.stroke(); c.restore();
     }
     if (this.state === 'stun') {
-      for (let i = 0; i < 4; i++) { const a = g.frame * 0.12 + i * TAU / 4; c.save(); c.translate(this.x + Math.cos(a) * 40, this.y - 300 + Math.sin(a) * 10); star(c, 0, 0, 10, '#ffd23f'); c.restore(); }
+      for (let i = 0; i < 4; i++) { const a = g.frame * 0.12 + i * TAU / 4; c.save(); c.translate(this.x + Math.cos(a) * 40, this.y - 320 * this.size + Math.sin(a) * 10); star(c, 0, 0, 10, '#ffd23f'); c.restore(); }
           }
     if (this.status.vein > 0) {
       const o = g.other(this);

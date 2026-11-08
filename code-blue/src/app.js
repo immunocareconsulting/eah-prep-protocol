@@ -53,7 +53,7 @@ function lineup(c, y, scale, t, highlight = -1) {
     const x = W / 2 + (i - (ROSTER.length - 1) / 2) * Math.min(230, 1150 / ROSTER.length);
     const b = Math.sin(t * 0.09 + i) * 0.06;
     const pose = Object.assign({}, i === highlight ? POSES.win : POSES.idle, { fK: POSES.idle.fK + b * 2, bK: POSES.idle.bK + b * 2 });
-    drawCharacter(c, r.look, x, y, { pose, facing: i < ROSTER.length / 2 ? 1 : -1, t, scale, expr: i === highlight ? 'happy' : 'normal', blink: (t + i * 50) % 220 < 6 });
+    drawCharacter(c, r.look, x, y, { pose, facing: i < ROSTER.length / 2 ? 1 : -1, t, scale: scale * (r.size || 1) / 1.13, expr: i === highlight ? 'happy' : 'normal', blink: (t + i * 50) % 220 < 6 });
   });
 }
 
