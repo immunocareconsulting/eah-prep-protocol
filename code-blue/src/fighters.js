@@ -153,7 +153,8 @@ const ULTS = {
 };
 
 // ---------- Roster ----------
-const ROSTER = [
+// Move library: the playable ROSTER (roster.js) picks and re-themes these.
+const BASE_ROSTER = [
   {
     id: 'martel', name: 'MARTEL', role: 'Nurse Practitioner', title: 'THE DIAGNOSIS DESTROYER', color: '#3bb3ff',
     stats: { power: 1.1, speed: 1.0, defense: 1.0 }, rating: { power: 4, speed: 3, defense: 3, difficulty: 2 },
@@ -391,8 +392,7 @@ const ROSTER = [
     ]
   }
 ];
-ROSTER.forEach(r => { r.look = LOOKS[r.id]; r.ult = ULTS[r.id]; });
-const byId = id => ROSTER.find(r => r.id === id);
+BASE_ROSTER.forEach(r => { r.look = LOOKS[r.id]; r.ult = ULTS[r.id]; });
 
 // ============================================================
 // Fighter
@@ -672,6 +672,14 @@ class Fighter {
     if (this.status.vein > 0) {
       c.save(); c.globalAlpha = 0.25 + Math.sin(g.frame * 0.3) * 0.1; c.fillStyle = '#ff2b4d';
       c.beginPath(); c.ellipse(this.x, this.y - 130, 80, 150, 0, 0, TAU); c.fill(); c.restore();
+    }
+    if (this.status.shield > 0) {
+      c.save(); c.globalAlpha = 0.22 + Math.sin(g.frame * 0.2) * 0.08; c.fillStyle = '#7fd6ff'; c.strokeStyle = '#d7f3ff'; c.lineWidth = 3;
+      c.beginPath(); c.ellipse(this.x, this.y - 140, 95, 165, 0, 0, TAU); c.fill(); c.globalAlpha = 0.7; c.stroke(); c.restore();
+    }
+    if (this.status.counter > 0) {
+      c.save(); c.globalAlpha = 0.5 + Math.sin(g.frame * 0.5) * 0.3; c.strokeStyle = '#9fe0ff'; c.lineWidth = 5; c.setLineDash([12, 8]);
+      c.beginPath(); c.ellipse(this.x, this.y - 140, 90, 160, 0, 0, TAU); c.stroke(); c.restore();
     }
     if (this.status.root > 0) { c.save(); c.strokeStyle = '#7cf28b'; c.lineWidth = 4; c.setLineDash([8, 6]); c.beginPath(); c.ellipse(this.x, FLOOR, 70, 14, 0, 0, TAU); c.stroke(); c.restore(); }
 

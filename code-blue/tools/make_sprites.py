@@ -68,6 +68,12 @@ def foreground(img):
 def split_sheet(img, alpha, order):
     """Find each figure on a sheet and return {pose: rgba crop}."""
     h, w = alpha.shape
+    # drop caption banners (wide, flat shapes) so they don't merge with the feet
+    n0, lab0, st0, _ = cv2.connectedComponentsWithStats((alpha > 30).astype(np.uint8))
+    for i in range(1, n0):
+        bw, bh = st0[i, cv2.CC_STAT_WIDTH], st0[i, cv2.CC_STAT_HEIGHT]
+        if bw > bh * 2.8 and bh < h * 0.06:
+            alpha[lab0 == i] = 0
     k = max(3, int(min(h, w) * 0.008))
     merged = cv2.dilate((alpha > 30).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k)))
     n, lab, st, cen = cv2.connectedComponentsWithStats(merged)
@@ -108,6 +114,41 @@ def split_sheet(img, alpha, order):
     return out
 
 
+def split_grid(img, alpha, order, cols, rows):
+    """Evenly spaced sheet: each connected piece goes to the cell holding most of it;
+    pieces that substantially cover two cells (touching figures) are split at the boundary."""
+    h, w = alpha.shape
+    n0, lab0, st0, _ = cv2.connectedComponentsWithStats((alpha > 30).astype(np.uint8))
+    for i in range(1, n0):                                   # caption banners
+        bw, bh = st0[i, cv2.CC_STAT_WIDTH], st0[i, cv2.CC_STAT_HEIGHT]
+        if bw > bh * 2.8 and bh < h * 0.06: alpha[lab0 == i] = 0
+    n, lab = cv2.connectedComponents((alpha > 30).astype(np.uint8))
+    cw, ch = w / cols, h / rows
+    yy, xx = np.indices((h, w))
+    cell_of = (np.minimum(yy // ch, rows - 1) * cols + np.minimum(xx // cw, cols - 1)).astype(np.int32)
+    owner = np.full((h, w), -1, np.int32)
+    for i in range(1, n):
+        m = lab == i
+        cells, cnt = np.unique(cell_of[m], return_counts=True)
+        if len(cells) > 1 and np.sort(cnt)[-2] > cnt.sum() * 0.25:
+            owner[m] = cell_of[m]                             # merged figures → split by cell
+        else:
+            owner[m] = cells[np.argmax(cnt)]
+    rgba = np.dstack([img[..., :3], alpha])
+    out = {}
+    for idx, pose in enumerate(order):
+        if pose == 'skip' or idx >= cols * rows: continue
+        m = owner == idx
+        if m.sum() < 200: continue
+        ys, xs = np.where(m)
+        y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+        crop = rgba[y0:y1, x0:x1].copy()
+        crop[..., 3] = np.where(m[y0:y1, x0:x1], crop[..., 3], 0)
+        out[pose] = crop
+    print(f'grid {cols}x{rows}: got {len(out)} poses')
+    return out
+
+
 def anchor(rgba, pose):
     """(x, y) of the point between the feet: torso centre horizontally, lowest pixel vertically."""
     a = rgba[..., 3] > 60
@@ -125,12 +166,25 @@ def main():
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument('--sheet'); g.add_argument('--folder')
     ap.add_argument('--order', default=','.join(POSES))
+    ap.add_argument('--grid', help='COLSxROWS for evenly spaced sheets, e.g. 5x3')
+    ap.add_argument('--cut-bands', help='pixel row ranges to erase first (caption strips), e.g. 318-352,643-680')
+    ap.add_argument('--panel-normalize', action='store_true',
+                    help='poses came from differently sized panels: rescale each panel row to consistent proportions')
     ap.add_argument('--height', type=float, default=300, help='idle height in game units (drawn fighters are ~300)')
     args = ap.parse_args()
 
     if args.sheet:
         img = read(args.sheet)
-        poses = split_sheet(img, foreground(img), [p.strip() for p in args.order.split(',')])
+        if args.cut_bands:
+            if img.shape[2] == 3: img = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+            for band in args.cut_bands.split(','):
+                y0, y1 = map(int, band.split('-')); img[y0:y1, :, 3] = 0
+        order = [p.strip() for p in args.order.split(',')]
+        if args.grid:
+            cols, rows = map(int, args.grid.lower().split('x'))
+            poses = split_grid(img, foreground(img), order, cols, rows)
+        else:
+            poses = split_sheet(img, foreground(img), order)
     else:
         poses = {}
         for p in pathlib.Path(args.folder).iterdir():
@@ -146,10 +200,24 @@ def main():
     ys = np.where(poses['idle'][..., 3] > 60)[0]
     scale = WORK_PX / (ys.max() - ys.min() + 1)              # one pixel scale for every pose
     conf = {'scale': round(args.height / WORK_PX, 5), 'poses': {}}
+    # Panel sheets draw some rows bigger. Pose-height ratios taken from a consistently drawn
+    # sheet (Cesar's) put each row back at the idle pose's scale.
+    row_scale = {}
+    if args.panel_normalize:
+        hgt = lambda p: np.ptp(np.where(poses[p][..., 3] > 60)[0]) + 1
+        idle_h = hgt('idle')
+        for members, ref, ratio in ((['lp', 'hp', 'lk', 'hk'], 'hp', 0.99),
+                                    (['special', 'ultimate', 'win'], 'win', 1.04),
+                                    (['hit', 'down', 'lose'], 'hit', 0.92)):
+            if ref in poses:
+                f = ratio * idle_h / hgt(ref)
+                for m in members: row_scale[m] = f
+                print(f'  rows {",".join(members)}: x{f:.2f}')
     for pose in POSES:
         if pose not in poses: continue
         im = poses[pose]
-        im = cv2.resize(im, (max(1, round(im.shape[1] * scale)), max(1, round(im.shape[0] * scale))), interpolation=cv2.INTER_AREA)
+        k = scale * row_scale.get(pose, 1)
+        im = cv2.resize(im, (max(1, round(im.shape[1] * k)), max(1, round(im.shape[0] * k))), interpolation=cv2.INTER_AREA)
         ys, xs = np.where(im[..., 3] > 8)
         im = im[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
         ax, ay = anchor(im, pose)

@@ -10,7 +10,7 @@ import base64, json, mimetypes, pathlib
 
 root = pathlib.Path(__file__).parent
 assets = root / 'assets'
-order = ['core.js', 'art.js', 'effects.js', 'fighters.js', 'arenas.js', 'match.js', 'app.js']
+order = ['core.js', 'art.js', 'effects.js', 'fighters.js', 'roster.js', 'arenas.js', 'match.js', 'app.js']
 
 
 def data_url(p):

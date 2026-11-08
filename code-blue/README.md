@@ -8,15 +8,14 @@ A 2D arcade fighting game for healthcare workers. It mixes Street Fighter-style 
 
 | Fighter | Role | Specials (L = Special) | Ultimate (O) |
 |---|---|---|---|
-| **MARTEL** "The Diagnosis Destroyer" | Nurse Practitioner | One-Star Smackdown (L) · Prior Authorization Denied (→L, stuns) · Stat Order (←L) · The Chart Is Closed (S+L) · Copay Collection (L in air, roots) | **The Final Diagnosis** → *DISCHARGED!* |
-| **NOVA** "The IV Avenger" | Registered Nurse | IV Pole Spin · Call Light Chaos · Med Pass Madness · Shift Change (teleport) | **The 12-Hour Shift** → *OVERTIME!* |
-| **RUBEN** "The Vital Sign Vigilante" | Medical Assistant | Thermometer Torpedo · Rooming Rush (stool dash) · No-Show Special (freeze) · Blood Pressure Blast (launcher) | **Vital Signs Critical!** → *PATIENT NEEDS FOLLOW-UP!* |
-| **CESAR** "The Vein Hunter" | Phlebotomist | Butterfly Strike · Tourniquet Tornado (pull) · Vein Finder Vision (damage + crit buff) · Specimen Storm | **The Difficult Stick** → *SPECIMEN COLLECTED!* |
-| **CHAD LEDGER** "The Budget Boss" | Hospital Administrator | Budget Cut · Mandatory Meeting (trap) · Staffing Shortage (decoys) · Performance Review | **Corporate Restructuring** → *POSITION ELIMINATED!* |
+| **MARTEL** "The Diagnosis Destroyer" | Nurse Practitioner · ImmunoCare Health | Diagnosis Shock (L) · Prior Authorization Denied (→L, stuns) · eRx Blast (←L) · PrEP Protect (S+L, halves damage taken) · One-Star Smackdown (L in air) | **Viral Suppression** → *DISCHARGED!* |
+| **RUBEN** "The Vital Sign Vigilante" | Certified Medical Assistant · ImmunoCare Health | BP Cuff Whip · Rooming Rush (stool dash) · Deflate & Stun · Hypertension Hold (launcher) | **BP Cuff Slam** → *PATIENT NEEDS FOLLOW-UP!* |
+| **CESAR** "The Vein Hunter" | Phlebotomist · ImmunoCare Health | Butterfly Strike · Tourniquet Tornado (pull) · Vein Finder Vision (damage + crit buff) · Specimen Storm | **The Difficult Stick** → *SPECIMEN COLLECTED!* |
+| **GORDON** "The Executive" | Executive Director · Equity Alliance Health | Executive Dealbreaker (briefcase swing) · Mandatory Meeting (trap) · Staffing Shortage (decoys) · Budget Cut | **340B Power Slam** → *POSITION ELIMINATED!* |
+| **DHVANI** "The Pharmacist" | Pharmacist / COO · ImmunoCare Health | Pill Toss · Rx Dispense (pill spray) · Med Pass Madness · 340B Savings (heal) | **340B Pill Storm** → *PRESCRIPTION FILLED!* |
+| **MADDY** "The Chief Nursing Officer" | Chief Nursing Officer · Equity Alliance Health | Chart Swipe · Audit Review (counter: absorbs a hit and strikes back) · Call Light Chaos · Shift Change (teleport) | **Compliance Overload** → *AUDIT FAILED!* |
 
-Martel and Ruben's heads are cut straight from the ImmunoCare illustrations. Cesar's head comes from his photo, smoothed and outlined to match that illustrated style. Their bodies are animated in code, with outfits and skin tones matched to the artwork. Nova and Chad Ledger are fictional and fully drawn in code.
-
-To regenerate the heads from new artwork, run `python3 tools/make_heads.py <martel_img> <ruben_img> <cesar_img>` (adjust the crop boxes in `SPEC`), then `python3 build.py`. This needs `pip install opencv-python-headless numpy`.
+All six fight with illustrated pose sprites taken from the supplied character sheets. On Gordon's briefcase, the ImmunoCare logo has been repainted as Equity Alliance Health. Their showcase art appears on the select screen, VS screen, ultimate cut-ins and victory report. In Arcade mode, Gordon is the final boss in the Boardroom.
 
 ## Controls
 
@@ -65,6 +64,15 @@ Everything below is picked up automatically by `python3 build.py`, and any fight
 
 **Showcase picture (one per fighter).** Save a dramatic full-body illustration as `assets/showcase/<id>.jpg` (about 630×840, portrait). It's used on the select screen, VS screen, ultimate cut-in, victory report and arcade ending. Cesar already has one.
 
+**18-panel character sheets** (dark panels with captions, like Gordon's, Dhvani's and Maddy's): `tools/cut_panels.py` cuts each panel and removes the background with rembg, then `make_sprites.py --folder ... --panel-normalize` evens out the panel sizes:
+
+```
+python3 tools/cut_panels.py art/gordon_sheet.webp gordon /tmp/gordon_poses --eah-logo
+python3 tools/make_sprites.py gordon --folder /tmp/gordon_poses --panel-normalize
+```
+
+The panel boxes for each sheet are in `LAYOUTS` at the top of `cut_panels.py`. For a new sheet, add its measured boxes there. This needs `pip install "rembg[cpu]"`.
+
 **Fighting poses (sprite sheet).** Generate 15 poses of the character in one image, on a plain white background, all facing right, in this order:
 
 | Row | Poses |
@@ -98,6 +106,8 @@ code-blue/
 ├─ build.py        ← bundles src/*.js + assets/heads/*.png into index.html
 ├─ tools/make_heads.py   ← cuts heads out of the reference artwork
 ├─ tools/make_sprites.py ← turns a pose sprite sheet into fighting sprites
+├─ tools/cut_panels.py   ← cuts poses out of 18-panel character sheets (rembg)
+├─ art/                  ← the original character sheets
 ├─ assets/showcase/      ← one full illustration per fighter
 ├─ assets/sprites/<id>/  ← pose sprites + sprites.json
 ├─ assets/heads/   ← transparent head cut-outs
@@ -106,7 +116,8 @@ code-blue/
    ├─ core.js      settings, input (keyboard/gamepad), Web Audio synth, announcer
    ├─ art.js       procedural cartoon characters, poses, faces, outfits
    ├─ effects.js   item art (DENIED stamp, one-star card…), particles, projectiles, pop-ups
-   ├─ fighters.js  roster, specials, ultimates, fighter state machine, CPU AI
+   ├─ fighters.js  move library, ultimates, fighter state machine, CPU AI
+   ├─ roster.js    the six playable fighters and their moves
    ├─ arenas.js    five animated stages
    ├─ match.js     rounds, hit resolution, camera, cinematics, HUD
    └─ app.js       menus, character/arena select, VS, results, touch controls, main loop

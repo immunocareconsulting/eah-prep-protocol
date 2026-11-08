@@ -50,10 +50,10 @@ function logo(c, x, y, s = 1) {
 }
 function lineup(c, y, scale, t, highlight = -1) {
   ROSTER.forEach((r, i) => {
-    const x = W / 2 + (i - 2) * 230;
+    const x = W / 2 + (i - (ROSTER.length - 1) / 2) * Math.min(230, 1150 / ROSTER.length);
     const b = Math.sin(t * 0.09 + i) * 0.06;
     const pose = Object.assign({}, i === highlight ? POSES.win : POSES.idle, { fK: POSES.idle.fK + b * 2, bK: POSES.idle.bK + b * 2 });
-    drawCharacter(c, r.look, x, y, { pose, facing: i < 2 ? 1 : i > 2 ? -1 : 1, t, scale, expr: i === highlight ? 'happy' : 'normal', blink: (t + i * 50) % 220 < 6 });
+    drawCharacter(c, r.look, x, y, { pose, facing: i < ROSTER.length / 2 ? 1 : -1, t, scale, expr: i === highlight ? 'happy' : 'normal', blink: (t + i * 50) % 220 < 6 });
   });
 }
 
@@ -209,7 +209,7 @@ function drawTitle(c) {
 }
 function drawMenu(c) {
   bgGrad(c);
-  const hi = (App.menuSel || 0) % 5;
+  const hi = (App.menuSel || 0) % ROSTER.length;
   c.save(); c.translate(260, 0); lineup(c, H + 10, 0.85, App.t, -1); c.restore();
   if (!drawShowcase(c, ROSTER[hi].id, 720, 110, 400, 530, { fy: 0.4, glow: ROSTER[hi].color, flip: true }))
     drawCharacter(c, ROSTER[hi].look, 900, 640, { pose: POSES.win, facing: -1, t: App.t, scale: 1.45, expr: 'happy', spriteKey: 'win' });
@@ -280,15 +280,15 @@ function drawSettings(c) {
 }
 
 // ---------- Character select ----------
-function selectCardRect(i) { const cw = 172, gap = 18, x0 = W / 2 - (5 * cw + 4 * gap) / 2; return { x: x0 + i * (cw + gap), y: 486, w: cw, h: 200 }; }
+function selectCardRect(i) { const n = ROSTER.length, cw = n > 5 ? 158 : 172, gap = n > 5 ? 12 : 18, x0 = Math.max(190, W / 2 - (n * cw + (n - 1) * gap) / 2); return { x: x0 + i * (cw + gap), y: 486, w: cw, h: 200 }; }
 function updateSelect() {
   const S = App.sel, mode = App.mode;
   const humanPicksP2 = mode !== 'arcade';
   const k = S.step;
-  if (Input.menu('left')) { S.cur[k] = (S.cur[k] + 4) % 5; AudioSys.sfx('select'); }
-  if (Input.menu('right')) { S.cur[k] = (S.cur[k] + 1) % 5; AudioSys.sfx('select'); }
+  if (Input.menu('left')) { S.cur[k] = (S.cur[k] + ROSTER.length - 1) % ROSTER.length; AudioSys.sfx('select'); }
+  if (Input.menu('right')) { S.cur[k] = (S.cur[k] + 1) % ROSTER.length; AudioSys.sfx('select'); }
   let ok = Input.menu('ok');
-  if (Input.mouse) for (let i = 0; i < 5; i++) if (tapped(selectCardRect(i))) { if (S.cur[k] === i) ok = true; else { S.cur[k] = i; AudioSys.sfx('select'); } }
+  if (Input.mouse) for (let i = 0; i < ROSTER.length; i++) if (tapped(selectCardRect(i))) { if (S.cur[k] === i) ok = true; else { S.cur[k] = i; AudioSys.sfx('select'); } }
   if (backTapped() || Input.menu('back')) {
     AudioSys.sfx('back');
     if (S.step > 0) { S.step--; S.chosen[S.step] = null; } else App.go('menu');
@@ -298,12 +298,12 @@ function updateSelect() {
     AudioSys.sfx('confirm');
     S.chosen[k] = ROSTER[S.cur[k]];
     Announcer.say(S.chosen[k].name, { size: 80, color: S.chosen[k].color, dur: 50, y: 420, speak: S.chosen[k].name.toLowerCase() });
-    if (k === 0 && humanPicksP2) { S.step = 1; if (S.cur[1] === S.cur[0]) S.cur[1] = (S.cur[0] + 1) % 5; return; }
+    if (k === 0 && humanPicksP2) { S.step = 1; if (S.cur[1] === S.cur[0]) S.cur[1] = (S.cur[0] + 1) % ROSTER.length; return; }
     if (mode === 'arcade') {
       const others = ROSTER.filter(r => r !== S.chosen[0]);
-      const boss = others.find(r => r.id === 'admin') || others[others.length - 1];
+      const boss = others.find(r => r.id === 'gordon') || others[others.length - 1];
       const rest = others.filter(r => r !== boss).sort(() => Math.random() - 0.5);
-      App.arcade = { ladder: [...rest, boss], arenas: [0, 1, Math.random() < 0.5 ? 2 : 3, 4], idx: 0 };
+      App.arcade = { ladder: [...rest, boss], arenas: others.map((_, i) => i === others.length - 1 ? 4 : i % 4), idx: 0 };
       App.nextArcade();
     } else { App.arenaSel = randi(0, 4); App.go('arena'); }
   }
@@ -326,7 +326,7 @@ function drawSelect(c) {
   rr(c, ix, 80, 820, 390, 16); c.fillStyle = 'rgba(5,10,30,.6)'; c.fill(); c.strokeStyle = def.color; c.lineWidth = 3; c.stroke();
   bigText(c, def.name, ix + 24, 122, 56, def.color, INK, 'left');
   bigText(c, `“${def.title}”`, ix + 24, 170, 28, '#fff', INK, 'left');
-  c.fillStyle = '#bcd3ff'; c.font = 'bold 18px sans-serif'; c.textAlign = 'left'; c.fillText(def.role.toUpperCase(), ix + 26, 205);
+  c.fillStyle = '#bcd3ff'; c.font = 'bold 18px sans-serif'; c.textAlign = 'left'; c.fillText(def.role.toUpperCase() + (def.org ? '  •  ' + def.org.toUpperCase() : ''), ix + 26, 205);
   const R = def.rating;
   [['POWER', R.power], ['SPEED', R.speed], ['DEFENSE', R.defense], ['DIFFICULTY', R.difficulty]].forEach(([n, v], i) => {
     c.fillStyle = '#fff'; c.font = 'bold 15px sans-serif'; c.textAlign = 'left'; c.fillText(n, ix + 26, 246 + i * 34);
@@ -346,7 +346,7 @@ function drawSelect(c) {
     c.save();
     rr(c, R2.x, R2.y, R2.w, R2.h, 14); c.fillStyle = isCur ? r.color : 'rgba(20,40,90,.9)'; c.fill();
     c.save(); rr(c, R2.x, R2.y, R2.w, R2.h, 14); c.clip();
-    if (hasShowcase(r.id)) drawShowcase(c, r.id, R2.x, R2.y, R2.w, R2.h, { fx: 0.44, fy: 0.11, zoom: 3.0, border: false, radius: 0 });
+    if (hasShowcase(r.id)) drawShowcase(c, r.id, R2.x, R2.y, R2.w, R2.h, Object.assign({ border: false, radius: 0 }, r.face));
     else if (PortraitImages[r.id]) { const im = PortraitImages[r.id]; const s = Math.max(R2.w / im.width, R2.h / im.height); c.drawImage(im, R2.x + (R2.w - im.width * s) / 2, R2.y, im.width * s, im.height * s); }
     else drawBust(c, r.look, R2.x + R2.w / 2 - 6, R2.y + 72, 2.3, isCur ? 'happy' : 'normal', App.t);
     c.restore();

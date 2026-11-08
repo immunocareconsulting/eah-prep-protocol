@@ -205,6 +205,13 @@ class Match {
   // ---------- combat resolution ----------
   applyHit(a, d, h, srcX) {
     if (this.cine || !d.hittable()) return false;
+    // Maddy's AUDIT REVIEW: absorb the hit and counter-attack
+    if (d.status.counter > 0 && !h.unblockable && !h.chip) {
+      d.status.counter = 0; d.set('idle'); d.faceOpp(); AudioSys.sfx('stamp');
+      this.fx.push(new FloatText(d.x, d.y - 330, 'AUDIT FAILED!', '#9fe0ff', 44, 60));
+      this.later(5, () => { if (a.hittable()) this.applyHit(d, a, { dmg: 110, stun: 30, kd: true, kb: 9, sfx: 'hitH', text: 'NON-COMPLIANT!', textColor: '#8e7dff', shake: 12, unblockable: true, burst: true }, d.x); });
+      return 'countered';
+    }
     const blocked = !h.unblockable && d.isBlockingFrom(srcX) && d.grounded();
     let dmg = h.dmg * a.def.stats.power / d.def.stats.defense * (a.dmgMult || 1);
     const dir = Math.sign(d.x - srcX) || a.facing;
@@ -221,7 +228,7 @@ class Match {
     a.combo = comboing ? a.combo + 1 : 1; a.comboT = 75; a.stats.maxCombo = Math.max(a.stats.maxCombo, a.combo);
     const scale = Math.max(0.35, 1 - 0.09 * (a.combo - 1));
     const crit = !h.chip && Math.random() < (a.status.vein > 0 ? 0.3 : 0.05);
-    dmg = Math.round(dmg * scale * (crit ? 1.5 : 1) * (a.status.vein > 0 ? 1.25 : 1));
+    dmg = Math.round(dmg * scale * (crit ? 1.5 : 1) * (a.status.vein > 0 ? 1.25 : 1) * (d.status.shield > 0 ? 0.5 : 1));
     d.hp = Math.max(0, d.hp - dmg); d.stats.taken += dmg;
     a.stats.dmg += dmg; a.stats.hits++;
     a.energy = Math.min(100, a.energy + (h.energy || 8)); d.energy = Math.min(100, d.energy + dmg * 0.05);
@@ -410,7 +417,7 @@ class Match {
     c.save();
     c.beginPath(); c.arc(x0 + dir * 50, 66, 48, 0, TAU); c.fillStyle = f.def.color; c.fill(); c.lineWidth = 4; c.strokeStyle = '#fff'; c.stroke();
     c.save(); c.beginPath(); c.arc(x0 + dir * 50, 66, 46, 0, TAU); c.clip();
-    drawBust(c, f.L, x0 + dir * 50, 40, 1.45, f.hp < f.maxHp * 0.25 ? 'hurt' : 'normal', this.frame, side === 0 ? 1 : -1);
+    if (!drawShowcase(c, f.def.id, x0 + dir * 50 - 48, 18, 96, 96, Object.assign({ border: false, radius: 0 }, f.def.face, { flip: side === 1 }))) drawBust(c, f.L, x0 + dir * 50, 40, 1.45, f.hp < f.maxHp * 0.25 ? 'hurt' : 'normal', this.frame, side === 0 ? 1 : -1);
     c.restore(); c.restore();
     // health bar
     c.save();
