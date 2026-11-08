@@ -14,8 +14,9 @@ A 2D arcade fighting game for healthcare workers. It mixes Street Fighter-style 
 | **GORDON** "The Executive" | Executive Director · Equity Alliance Health | Executive Dealbreaker (briefcase swing) · Mandatory Meeting (trap) · Staffing Shortage (decoys) · Budget Cut | **340B Power Slam** → *POSITION ELIMINATED!* |
 | **DHVANI** "The Pharmacist" | Pharmacist / COO · ImmunoCare Health | Pill Toss · Rx Dispense (pill spray) · Med Pass Madness · 340B Savings (heal) | **340B Pill Storm** → *PRESCRIPTION FILLED!* |
 | **MADDY** "The Chief Nursing Officer" | Chief Nursing Officer · Equity Alliance Health | Chart Swipe · Audit Review (counter: absorbs a hit and strikes back) · Call Light Chaos · Shift Change (teleport) | **Compliance Overload** → *AUDIT FAILED!* |
+| **CAPRICE** "The Executive Director" | Executive Director · Equity Alliance Health | Nail Slash · Boardroom Claw (claw dash) · You're On Notice (freeze) · Performance Review | **Executive Nail Storm** → *TERMINATED WITH CAUSE!* |
 
-All six fight with illustrated pose sprites taken from the supplied character sheets. On Gordon's briefcase, the ImmunoCare logo has been repainted as Equity Alliance Health. Their showcase art appears on the select screen, VS screen, ultimate cut-ins and victory report. In Arcade mode, Gordon is the final boss in the Boardroom.
+All seven fight with illustrated pose sprites taken from the supplied character sheets. On Gordon's briefcase, the ImmunoCare logo has been repainted as Equity Alliance Health. Their showcase art appears on the select screen, VS screen, ultimate cut-ins and victory report. In Arcade mode, Gordon is the final boss in the Boardroom.
 
 ## Controls
 

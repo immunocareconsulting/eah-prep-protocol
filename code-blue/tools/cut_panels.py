@@ -31,6 +31,10 @@ LAYOUTS = {   # (x0, y0, x1, y1) per panel, captions excluded
               [(327, 538, 735, 748), (752, 538, 1228, 748), (1246, 538, 1528, 750)] + rows(325, 1530, 832, 965, 4),
     'maddy':  rows(305, 1442, 34, 225, 6) + rows(305, 1442, 300, 478, 5) +
               [(307, 552, 720, 786), (730, 552, 1162, 786), (1172, 552, 1440, 790)] + rows(305, 1442, 866, 1016, 4),
+    'caprice': [(332, 30, 525, 216), (525, 30, 725, 216), (725, 30, 896, 216), (896, 10, 1100, 216), (1100, 30, 1302, 216), (1302, 30, 1530, 216),
+                (332, 280, 548, 446), (548, 280, 776, 446), (776, 280, 986, 446), (986, 280, 1226, 446), (1226, 280, 1530, 446),
+                (332, 520, 757, 724), (768, 520, 1228, 724), (1238, 520, 1530, 724),
+                (332, 812, 626, 956), (626, 812, 880, 956), (880, 812, 1236, 956), (1236, 812, 1530, 956)],
 }
 
 
@@ -41,6 +45,10 @@ for _k, _top in (('gordon', 10), ('dhvani', 12), ('maddy', 12)):
 
 # poses where another rembg model keeps props/effects better
 MODEL_FOR = {('gordon', 'special'): 'u2net'}
+
+
+# per-sheet panel→pose overrides (index into NAMES)
+NAMES_FOR = {'caprice': {10: 'special', 11: None}}   # her boardroom-claw panel hides the legs behind a table
 
 
 def clean(alpha):
@@ -126,7 +134,9 @@ def main():
     from rembg import remove, new_session
     sessions = {}
     sheet = Image.open(args.sheet).convert('RGB')
-    for name, box in zip(NAMES, LAYOUTS[args.layout]):
+    names = list(NAMES)
+    for i, nm in NAMES_FOR.get(args.layout, {}).items(): names[i] = nm
+    for name, box in zip(names, LAYOUTS[args.layout]):
         if not name or (only and name not in only): continue
         model = MODEL_FOR.get((args.layout, name), args.model)
         if model not in sessions: sessions[model] = new_session(model)

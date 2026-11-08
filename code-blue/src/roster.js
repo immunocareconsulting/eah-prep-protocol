@@ -195,6 +195,58 @@ const S_AUDIT_REVIEW = { input: 'F', name: 'AUDIT REVIEW', cd: 300, dur: 42, at:
   AudioSys.sfx('ding'); f.status.counter = 40; g.floatText(f.x, f.y - 320, 'UNDER REVIEW…', '#9fe0ff');
 } };
 
+// ---------- Caprice ----------
+LOOKS.caprice = Object.assign({}, LOOKS.admin, { id: 'caprice', hairStyle: 'crop', hair: '#f0d890', glasses: false, top: '#d9d4c8', topD: '#a9a397', pants: '#2a2633', pantsD: '#1d1a24', under: '#1a1a1a', skin: '#8a5a3c', skinD: '#6a4228', smile: 'soft' });
+function clawSlash(g, f, x, y, n = 3, col = '#ffd23f', size = 1) {
+  g.fx.push(new Timed(14, { draw(c, t) {
+    const p = t / 14; c.save(); c.translate(x, y); c.scale(f.facing * size, size); c.globalAlpha = 1 - p;
+    c.shadowColor = col; c.shadowBlur = 18; c.strokeStyle = col; c.lineCap = 'round';
+    for (let i = 0; i < n; i++) { c.lineWidth = 7 - i; c.beginPath(); c.arc(-30, (i - 1) * 26, 80, -1.1 + p * 0.6, 0.4 + p * 0.9); c.stroke(); }
+    c.restore();
+  } }));
+}
+const S_NAIL_SLASH = { input: 'N', name: 'NAIL SLASH', cd: 110, dur: 26, at: 7, pose: 'cast', run(f, g) {
+  AudioSys.sfx('snip'); const opp = g.other(f), s = f.size;
+  clawSlash(g, f, f.x + f.facing * 150 * s, f.y - 190 * s, 3, '#ffd23f', 1.1);
+  const box = { x: f.facing > 0 ? f.x + 20 : f.x - 240 * s, y: f.y - 270 * s, w: 220 * s, h: 200 * s };
+  if (opp.hittable() && overlap(box, opp.hurtbox())) g.applyHit(f, opp, { dmg: 78, stun: 20, kb: 7, sfx: 'snip', text: 'SLASHED!', textColor: '#ffd23f', shake: 5 }, f.x);
+} };
+const S_BOARDROOM_CLAW = { input: 'F', name: 'BOARDROOM CLAW', cd: 220, dur: 30, at: 3, pose: 'cast', run(f, g) {
+  AudioSys.sfx('whoosh'); f.hitThis = false;
+}, tick(f, g, t) {
+  if (t < 3 || t > 18) { f.vx *= 0.7; return; }
+  f.vx = f.facing * 16;
+  if (t % 3 === 0) g.fx.push(new Particle(f.x, f.y - rand(60, 220) * f.size, { kind: 'item', item: 'paper', size: 0.7, vx: -f.facing * 3, vy: rand(-2, 1), g: 0.05, life: 30 }));
+  const opp = g.other(f), s = f.size;
+  const box = { x: f.facing > 0 ? f.x : f.x - 130 * s, y: f.y - 260 * s, w: 130 * s, h: 240 * s };
+  if (!f.hitThis && opp.hittable() && overlap(box, opp.hurtbox())) {
+    f.hitThis = true; clawSlash(g, f, opp.x, opp.y - 170 * opp.size, 4, '#ffb000', 1.4);
+    g.applyHit(f, opp, { dmg: 95, stun: 26, kb: 12, kd: true, sfx: 'hitH', text: 'BOARDROOM CLAW!', textColor: '#ffd23f', shake: 9, burst: true }, f.x);
+    f.vx = -f.facing * 4; f.specT = Math.max(f.specT, 24);
+  }
+} };
+ULTS.caprice = {
+  name: 'EXECUTIVE NAIL STORM', quote: 'THE BOARD HAS SPOKEN. AND SO HAVE MY NAILS.', final: 'TERMINATED WITH CAUSE!', pose: 'cast',
+  dur: 250, hits: [62, 74, 86, 98, 110, 122, 134, 146, 158, 180, 200], dmg: 330,
+  drawWorld(c, t, k) {
+    if (t < 35) return;
+    const x = k.target.x, a = Math.min(1, (t - 35) / 18);
+    for (let i = 0; i < 2; i++) { c.save(); c.translate(x + (i ? 210 : -210), FLOOR - 330 + Math.sin(t * 0.05 + i) * 12); ITEMS.checklist(c, 1.1, a); c.restore(); }
+    if (t > 55 && t < 210) for (let i = 0; i < 4; i++) {
+      const ph = ((t + i * 9) % 24) / 24, ang = i * 0.8 + Math.floor((t + i * 9) / 24) * 1.7;
+      c.save(); c.translate(x, FLOOR - 180); c.rotate(ang); c.globalAlpha = 1 - ph;
+      c.shadowColor = '#ffd23f'; c.shadowBlur = 22; c.strokeStyle = i % 2 ? '#ffd23f' : '#fff3b0'; c.lineCap = 'round';
+      for (let j = 0; j < 3; j++) { c.lineWidth = 8 - j * 2; c.beginPath(); c.moveTo(-170 + ph * 60, (j - 1) * 24); c.lineTo(170 + ph * 60, (j - 1) * 24 - 30); c.stroke(); }
+      c.restore();
+    }
+    bigText(c, 'BOARD VOTE: 7–0', x, FLOOR - 480, 32, '#ffd23f');
+  },
+  update(t, k, g) {
+    if (t > 55 && t < 205 && t % 12 === 2) AudioSys.sfx('snip');
+    if (t > 50 && t < 200 && t % 5 === 0) g.fx.push(new Particle(k.target.x + rand(-200, 200), FLOOR - 620, { kind: 'item', item: 'paper', size: 1.1, vx: rand(-3, 3), vy: rand(5, 10), g: 0.35, life: 60, drag: 1 }));
+  }
+};
+
 const ROSTER = [
   Object.assign({}, byBase('martel'), {
     intro: "Let's review your chart.", win: ['Diagnosis: you just got schooled.', 'Viral load: undetectable. Your chances: also undetectable.', 'Discharged. No follow-up needed.'],
@@ -227,10 +279,17 @@ const ROSTER = [
     intro: "I'll be reviewing your charts. All of them.", win: ['Audit complete. You failed.', "That's a corrective action plan.", 'Compliance: restored.'],
     specials: [S_CHART_SWIPE, S_AUDIT_REVIEW, SP('CALL LIGHT CHAOS'), SP('SHIFT CHANGE')],
     face: { fx: 0.53, fy: 0.17, zoom: 1.45 }
+  },
+  {
+    id: 'caprice', name: 'CAPRICE', role: 'Executive Director', title: 'THE EXECUTIVE DIRECTOR', color: '#f2c14e', org: 'Equity Alliance Health',
+    stats: { power: 1.08, speed: 1.0, defense: 1.02 }, rating: { power: 4, speed: 3, defense: 3, difficulty: 3 },
+    intro: "Darling, I don't do meetings. I do results.", win: ['Executive decision: you lose.', 'Community impact: devastating.', "Don't make me file my nails on you again."],
+    specials: [S_NAIL_SLASH, S_BOARDROOM_CLAW, SP('NO-SHOW SPECIAL', { name: "YOU'RE ON NOTICE" }), SP('PERFORMANCE REVIEW')],
+    face: { fx: 0.5, fy: 0.16, zoom: 1.5 }
   }
 ];
 function byBase(id) { return BASE_ROSTER.find(r => r.id === id); }
 // Drawn height: sprites are authored at 300 units; everyone is scaled up, Martel (6'4") the most.
-const HEIGHTS = { martel: 1.25, gordon: 1.15, ruben: 1.13, cesar: 1.14, dhvani: 1.08, maddy: 1.1 };
+const HEIGHTS = { martel: 1.25, gordon: 1.15, ruben: 1.13, cesar: 1.14, dhvani: 1.08, maddy: 1.1, caprice: 1.09 };
 ROSTER.forEach(r => { r.look = LOOKS[r.id]; r.ult = ULTS[r.id]; r.size = HEIGHTS[r.id] || 1.12; });
 const byId = id => ROSTER.find(r => r.id === id);

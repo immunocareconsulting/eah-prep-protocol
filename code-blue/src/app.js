@@ -280,7 +280,7 @@ function drawSettings(c) {
 }
 
 // ---------- Character select ----------
-function selectCardRect(i) { const n = ROSTER.length, cw = n > 5 ? 158 : 172, gap = n > 5 ? 12 : 18, x0 = Math.max(190, W / 2 - (n * cw + (n - 1) * gap) / 2); return { x: x0 + i * (cw + gap), y: 486, w: cw, h: 200 }; }
+function selectCardRect(i) { const n = ROSTER.length, cw = n > 6 ? 140 : n > 5 ? 158 : 172, gap = n > 6 ? 10 : n > 5 ? 12 : 18, x0 = Math.max(190, W / 2 - (n * cw + (n - 1) * gap) / 2); return { x: x0 + i * (cw + gap), y: 486, w: cw, h: 200 }; }
 function updateSelect() {
   const S = App.sel, mode = App.mode;
   const humanPicksP2 = mode !== 'arcade';
