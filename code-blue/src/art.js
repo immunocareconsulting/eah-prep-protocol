@@ -613,7 +613,7 @@ const SPRITE_FALLBACK = { walk1: 'idle', walk2: 'walk1', jump: 'idle', lp: 'hp',
 const SpriteSets = {};
 if (typeof SPRITE_DATA !== 'undefined') for (const id in SPRITE_DATA) {
   const set = { scale: SPRITE_DATA[id].scale, poses: {} };
-  for (const k in SPRITE_DATA[id].poses) { const d = SPRITE_DATA[id].poses[k]; loadImg(d.src, im => { set.poses[k] = { im, ax: d.ax, ay: d.ay }; }); }
+  for (const k in SPRITE_DATA[id].poses) { const d = SPRITE_DATA[id].poses[k]; loadImg(d.src, im => { set.poses[k] = { im, ax: d.ax, ay: d.ay, logo: d.logo }; }); }
   SpriteSets[id] = set;
 }
 const hasSprites = id => !!(SpriteSets[id] && SpriteSets[id].poses.idle);
@@ -634,6 +634,11 @@ function drawSprite(c, id, key, x, y, o) {
   if (o.expr === 'shock') c.translate(Math.sin(t * 1.3) * 3, 0);
   c.scale(sx, sy);
   c.drawImage(sp.im, -sp.ax * k, -sp.ay * k, sp.im.width * k, sp.im.height * k);
+  if (sp.logo && (o.facing || 1) < 0) {           // keep badge text readable when mirrored
+    const [lx, ly, lw, lh] = sp.logo;
+    c.save(); c.translate((lx + lw / 2 - sp.ax) * k, 0); c.scale(-1, 1);
+    c.drawImage(sp.im, lx, ly, lw, lh, -lw / 2 * k, (ly - sp.ay) * k, lw * k, lh * k); c.restore();
+  }
   c.restore();
   if (o.expr === 'ko' || o.expr === 'hurt') {
     const hy = y - sp.ay * k * 0.92;

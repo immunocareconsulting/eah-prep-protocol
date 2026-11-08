@@ -47,7 +47,7 @@ Touch screens get an on-screen D-pad and buttons automatically. You can force th
   - **Nurses' Station:** call-light board, ringing phones, the EHR wall.
   - **Skilled Nursing Facility:** bingo banner, a wheelchair drag race.
   - **Insurance Authorization Office:** DENIED posters, a fax machine spewing paper, hold music.
-  - **Hospital Boardroom:** skyline, KPI dashboards, spotlights.
+  - **Quality & Operations Center:** Equity Alliance Health dashboard wall.
 - **Audio:** synthesized arcade music and sound effects (monitor beeps, EHR notifications, printers, phones, alarms, cartoon impacts). The announcer uses the browser's built-in speech plus on-screen callouts: "CODE BLUE!", "ROUND ONE — BEGIN YOUR SHIFT!", "PRIOR AUTH DENIED!", "PERFECT SHIFT!" and more.
 - **Comedy pop-ups:** random hospital notifications during fights. Some actually change things: "Insurance Has Denied Your Special Attack!" puts a fighter's specials on cooldown, and "Critical Lab Result!" gives both fighters energy.
 
@@ -59,6 +59,8 @@ Touch screens get an on-screen D-pad and buttons automatically. You can force th
 - **No external framework.** Phaser/React aren't used, so the game works anywhere an Artifact runs. It's plain HTML5 Canvas with a fixed 60 FPS update loop.
 
 ## Adding illustrated art
+
+**Arena backgrounds.** Put 1920×1080 images named `01_…png` to `05_…png` in `art/backgrounds/`, then run `python3 tools/make_backgrounds.py` and `python3 build.py`. If the new images have title banners in a different place, adjust the `BANNER` boxes in that script first.
 
 Everything below is picked up automatically by `python3 build.py`, and any fighter without it keeps the drawn look.
 
@@ -107,6 +109,8 @@ code-blue/
 ├─ tools/make_heads.py   ← cuts heads out of the reference artwork
 ├─ tools/make_sprites.py ← turns a pose sprite sheet into fighting sprites
 ├─ tools/cut_panels.py   ← cuts poses out of 18-panel character sheets (rembg)
+├─ tools/make_backgrounds.py ← removes title banners from art/backgrounds/*.png → assets/arenas/
+├─ tools/mark_logos.py   ← marks badge positions so logos stay readable when mirrored
 ├─ art/                  ← the original character sheets
 ├─ assets/showcase/      ← one full illustration per fighter
 ├─ assets/sprites/<id>/  ← pose sprites + sprites.json

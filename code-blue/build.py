@@ -19,6 +19,7 @@ def data_url(p):
 
 
 heads = {p.stem: data_url(p) for p in sorted((assets / 'heads').glob('*.png'))}
+arenas = {p.stem: data_url(p) for p in sorted((assets / 'arenas').glob('*.jpg'))}
 showcase = {p.stem: data_url(p) for p in sorted((assets / 'showcase').glob('*')) if p.suffix.lower() in ('.jpg', '.jpeg', '.png', '.webp')}
 sprites = {}
 for d in sorted((assets / 'sprites').glob('*')):
@@ -29,7 +30,7 @@ for d in sorted((assets / 'sprites').glob('*')):
         sprites[d.name] = {'scale': conf['scale'], 'poses': {k: dict(v, src=imgs[k]) for k, v in conf['poses'].items() if k in imgs}}
 
 prelude = ''.join(f'const {name} = {json.dumps(val)};\n' for name, val in
-                  [('EAH_LOGO', data_url(assets / 'eah_logo.png') if (assets / 'eah_logo.png').exists() else ''), ('HEAD_DATA', heads), ('SHOWCASE_DATA', showcase), ('SPRITE_DATA', sprites)])
+                  [('ARENA_DATA', arenas), ('EAH_LOGO', data_url(assets / 'eah_logo.png') if (assets / 'eah_logo.png').exists() else ''), ('HEAD_DATA', heads), ('SHOWCASE_DATA', showcase), ('SPRITE_DATA', sprites)])
 js = prelude + '\n'.join((root / 'src' / f).read_text() for f in order)
 html = (root / 'template.html').read_text().replace('/*__SCRIPTS__*/', js)
 (root / 'index.html').write_text(html)

@@ -333,9 +333,10 @@ class Match {
   draw(c) {
     const cam = this.cam;
     const sx = cam.shake ? rand(-cam.shake, cam.shake) : 0, sy = cam.shake ? rand(-cam.shake, cam.shake) : 0;
+    const bg = drawArenaBG(c, this.o.arena, cam, this.frame, sx, sy);
     c.save();
     c.translate(W / 2 + sx, 640 + sy); c.scale(cam.zoom, cam.zoom); c.translate(-cam.x, -FLOOR);
-    this.arena.draw(c, cam, this.frame);
+    if (!bg) this.arena.draw(c, cam, this.frame);
     if (this.cine || (this.camPunch && this.camPunch.t > 0)) {
       const a = this.cine ? Math.min(0.6, this.cine.t / 20 * 0.6) * (this.cine.t > this.cine.def.dur - 15 ? (this.cine.def.dur - this.cine.t) / 15 : 1) : this.camPunch.t / 16 * 0.3;
       c.fillStyle = `rgba(5,8,25,${a})`; c.fillRect(-600, -600, STAGE_W + 1200, 1600);

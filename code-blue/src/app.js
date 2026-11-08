@@ -191,7 +191,7 @@ const App = {
 const MAIN_MENU = [
   { label: 'START GAME', sub: 'Arcade run vs. the whole hospital', go: () => App.startSelect('arcade') },
   { label: 'CHARACTER SELECTION', sub: 'Pick your fighter & opponent (vs CPU)', go: () => App.startSelect('cpu') },
-  { label: 'ARCADE MODE', sub: '4 fights. Final boss in the Boardroom.', go: () => App.startSelect('arcade') },
+  { label: 'ARCADE MODE', sub: '5 fights. Final boss: Gordon in Quality & Operations.', go: () => App.startSelect('arcade') },
   { label: 'VERSUS MODE', sub: 'Local 2-player (keyboard / gamepads)', go: () => App.startSelect('versus') },
   { label: 'TRAINING MODE', sub: 'Practice combos on a dummy', go: () => App.startSelect('training') },
   { label: 'INSTRUCTIONS', sub: 'Controls, specials & tips', go: () => App.go('instructions') },
@@ -372,6 +372,7 @@ function updateArenaSelect() {
 }
 function drawArenaPreview(c, i, x, y, w, h, t) {
   c.save(); rr(c, x, y, w, h, 12); c.clip();
+  if (ArenaImages[i]) { const im = ArenaImages[i], s = Math.max(w / im.width, h / im.height); c.drawImage(im, x + (w - im.width * s) / 2, y + (h - im.height * s) / 2, im.width * s, im.height * s); c.restore(); return; }
   const z = w / W; c.translate(x, y); c.scale(z, z);
   c.translate(W / 2, 640); c.translate(-STAGE_W / 2, -FLOOR);
   ARENAS[i].draw(c, { x: STAGE_W / 2, zoom: 1 }, t);

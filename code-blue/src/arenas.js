@@ -213,7 +213,7 @@ const ARENAS = [
     }
   },
   {
-    id: 'boardroom', name: 'HOSPITAL BOARDROOM', music: 'boss', ambient: ['ding', 'notify'],
+    id: 'boardroom', name: 'QUALITY & OPERATIONS CENTER', music: 'boss', ambient: ['ding', 'notify'],
     draw(c, cam, t) {
       parallax(c, cam, 0.3, () => {
         gradRect(c, -600, -200, STAGE_W + 1200, FLOOR + 200, [[0, '#0b1230'], [0.6, '#1d2a5a'], [1, '#2c1d4a']]);
@@ -260,4 +260,24 @@ function wheelchair(c, s, t) {
   c.fillStyle = '#1f5fd1'; c.fillRect(-30, -50, 50, 10); c.fillRect(-36, -100, 10, 60);
   c.lineWidth = 4; c.beginPath(); c.moveTo(20, -40); c.lineTo(34, 20); c.stroke();
   c.restore();
+}
+
+// ---------- Illustrated backgrounds (assets/arenas/<n>.jpg) ----------
+// Drawn in screen space with parallax; the procedural drawings above stay as a fallback.
+const ARENA_TINT = ['rgba(255,40,40,', 'rgba(255,200,120,', 'rgba(255,170,80,', 'rgba(120,160,255,', 'rgba(150,90,255,'];
+const ArenaImages = [];
+if (typeof ARENA_DATA !== 'undefined') for (const k in ARENA_DATA) { const i = +k - 1; loadImg(ARENA_DATA[k], im => { ArenaImages[i] = im; }); }
+function drawArenaBG(c, idx, cam, t, sx = 0, sy = 0) {
+  const im = ArenaImages[idx]; if (!im) return false;
+  const k = 1 + (cam.zoom - 1) * 0.6;
+  const iw = W * 1.3 * k, ih = iw * im.height / im.width;
+  const half = W / 2 / cam.zoom, p = clamp((cam.x - half) / Math.max(1, STAGE_W - 2 * half), 0, 1);
+  const x = -(iw - W) * p + sx * 0.5, y = H - ih * 0.95 + sy * 0.5 + (k - 1) * ih * 0.08;
+  c.drawImage(im, x, y, iw, ih);
+  // gentle ambient light pulse + vignette so fighters pop off the busy art
+  c.fillStyle = ARENA_TINT[idx] + (0.035 + Math.sin(t * 0.05) * 0.03) + ')'; c.fillRect(0, 0, W, H);
+  const g = c.createRadialGradient(W / 2, H * 0.62, H * 0.35, W / 2, H * 0.62, W * 0.75);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,15,.38)');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  return true;
 }
